@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Product Service (from hw6)
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    container_name: product-service
+    ports:
+      - "8080:8080"
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Bad Product Service (returns 503 errors 50% of time)
+  product-service-bad:
+    build:
+      context: ./product-service-bad
+      dockerfile: Dockerfile
+    container_name: product-service-bad
+    ports:
+      - "8081:8080"
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Shopping Cart Service (Go)
+  shopping-cart-service:
+    build:
+      context: ./shopping-cart-service
+      dockerfile: Dockerfile
+    container_name: shopping-cart-service
+    ports:
+      - "8082:8080"
+    environment:
+      PORT: "8080"
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
+      CCA_SERVICE_URL: http://credit-card-authorizer:8080
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      credit-card-authorizer:
+        condition: service_started
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Credit Card Authorizer (your teammate will implement)
+  credit-card-authorizer:
+    build:
+      context: ./credit-card-authorizer
+      dockerfile: Dockerfile
+    container_name: credit-card-authorizer
+    ports:
+      - "8083:8080"
+    environment:
+      PORT: "8080"
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Warehouse Service (your teammate will implement)
+  warehouse-service:
+    build:
+      context: ./warehouse-service
+      dockerfile: Dockerfile
+    container_name: warehouse-service
+    environment:
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+networks:
+  microservices-network:
+    driver: bridge
+
+volumes:
+  rabbitmq_data:
