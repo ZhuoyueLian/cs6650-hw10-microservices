@@ -1,0 +1,4 @@
+# RabbitMQ NLB DNS Name (手动设置)
+# 从 terraform output rabbitmq_nlb_dns_name 获取，或者从 AWS Console 获取
+rabbitmq_nlb_dns_name = "cs6650-hw10-rabbitmq-nlb-d724f09ee65497bd.elb.us-west-2.amazonaws.com"
+
