@@ -72,21 +72,3 @@ variable "target_group_arn" {
   default     = null
   description = "ARN of target group to attach this service to (optional)"
 }
-
-variable "enable_service_discovery" {
-  type        = bool
-  default     = false
-  description = "Whether to enable service discovery for this service"
-}
-
-variable "service_discovery_namespace_id" {
-  type        = string
-  default     = ""
-  description = "Service discovery namespace ID for DNS resolution (required if enable_service_discovery = true)"
-}
-
-variable "service_discovery_namespace_name" {
-  type        = string
-  default     = null
-  description = "Service discovery namespace name (e.g., cs6650-hw10.local) for DNS resolution"
-}

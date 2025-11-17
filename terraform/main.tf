@@ -21,8 +21,6 @@ data "aws_iam_role" "lab_role" {
   name = "LabRole"
 }
 
-# Service Discovery removed - using NLB for RabbitMQ and ALB for HTTP services
-
 # ECR Repositories for each service
 module "ecr_product" {
   source          = "./modules/ecr"

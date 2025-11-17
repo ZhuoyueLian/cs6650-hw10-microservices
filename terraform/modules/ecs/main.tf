@@ -41,24 +41,6 @@ resource "aws_ecs_task_definition" "this" {
   }])
 }
 
-# Service Discovery Service (if enabled)
-resource "aws_service_discovery_service" "this" {
-  count = var.enable_service_discovery ? 1 : 0
-  
-  name = var.service_name
-
-  dns_config {
-    namespace_id = var.service_discovery_namespace_id
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-
-    routing_policy = "MULTIVALUE"
-  }
-}
-
 # ECS Service
 resource "aws_ecs_service" "this" {
   name            = var.service_name
@@ -79,13 +61,6 @@ resource "aws_ecs_service" "this" {
       target_group_arn = var.target_group_arn
       container_name   = "${var.service_name}-container"
       container_port   = var.container_port
-    }
-  }
-
-  dynamic "service_registries" {
-    for_each = length(aws_service_discovery_service.this) > 0 ? [1] : []
-    content {
-      registry_arn = aws_service_discovery_service.this[0].arn
     }
   }
 }

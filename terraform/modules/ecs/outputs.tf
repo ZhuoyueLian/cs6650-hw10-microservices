@@ -12,8 +12,3 @@ output "service_id" {
   description = "ECS service ID"
   value       = aws_ecs_service.this.id
 }
-
-output "service_dns_name" {
-  description = "Service discovery DNS name (format: service-name.namespace)"
-  value       = var.service_discovery_namespace_id != "" ? "${var.service_name}.${var.service_discovery_namespace_name}" : null
-}
