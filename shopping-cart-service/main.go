@@ -78,7 +78,7 @@ var (
 var (
 	serverPort    = getEnv("PORT", "8080")
 	rabbitmqURL   = getEnv("RABBITMQ_URL", "amqp://admin:admin123@localhost:5672")
-	ccaServiceURL = getEnv("CCA_SERVICE_URL", "http://localhost:8082")
+	ccaServiceURL = getEnv("CCA_SERVICE_URL", "http://localhost:8083")
 )
 
 func main() {
@@ -246,10 +246,7 @@ func addItemToCart(c *gin.Context) {
 
 	// If not found, add new item
 	if !found {
-		cart.Items = append(cart.Items, CartItem{
-			ProductID: req.ProductID,
-			Quantity:  req.Quantity,
-		})
+		cart.Items = append(cart.Items, CartItem(req))
 	}
 
 	// Store updated cart

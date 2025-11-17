@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -35,13 +36,13 @@ var (
 	totalOrders  int64                    // Total number of orders processed
 	productQty   = make(map[string]int64) // ProductID -> quantity (protected by productMutex)
 	productMutex sync.Mutex               // Mutex to protect productQty map
-	numWorkers   = 10                     // Number of worker goroutines for processing messages
 )
 
 // Configuration from environment
 var (
 	rabbitmqURL = getEnv("RABBITMQ_URL", "amqp://admin:admin123@localhost:5672")
 	queueName   = "warehouse_orders"
+	numWorkers  = getEnvInt("WAREHOUSE_WORKERS", 10) // Number of worker goroutines (configurable)
 )
 
 func main() {
@@ -225,4 +226,22 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+// getEnvInt gets environment variable as integer with default value
+func getEnvInt(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		log.Printf("Warning: Invalid value for %s (%s), using default %d", key, value, defaultValue)
+		return defaultValue
+	}
+	if intValue < 1 {
+		log.Printf("Warning: %s must be at least 1, using default %d", key, defaultValue)
+		return defaultValue
+	}
+	return intValue
 }

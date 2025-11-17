@@ -1,0 +1,91 @@
+# ECS Cluster
+resource "aws_ecs_cluster" "this" {
+  name = "${var.service_name}-cluster"
+}
+
+# Task Definition
+resource "aws_ecs_task_definition" "this" {
+  family                   = "${var.service_name}-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.cpu
+  memory                   = var.memory
+
+  execution_role_arn = var.execution_role_arn
+  task_role_arn      = var.task_role_arn
+
+  container_definitions = jsonencode([{
+    name      = "${var.service_name}-container"
+    image     = var.image
+    essential = true
+
+    portMappings = [{
+      containerPort = var.container_port
+    }]
+
+    environment = var.environment_variables != null ? [
+      for key, value in var.environment_variables : {
+        name  = key
+        value = value
+      }
+    ] : []
+
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = var.log_group_name
+        "awslogs-region"        = var.region
+        "awslogs-stream-prefix" = "ecs"
+      }
+    }
+  }])
+}
+
+# Service Discovery Service (if enabled)
+resource "aws_service_discovery_service" "this" {
+  count = var.enable_service_discovery ? 1 : 0
+  
+  name = var.service_name
+
+  dns_config {
+    namespace_id = var.service_discovery_namespace_id
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+
+    routing_policy = "MULTIVALUE"
+  }
+}
+
+# ECS Service
+resource "aws_ecs_service" "this" {
+  name            = var.service_name
+  cluster         = aws_ecs_cluster.this.id
+  task_definition = aws_ecs_task_definition.this.arn
+  desired_count   = var.ecs_count
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = var.subnet_ids
+    security_groups = var.security_group_ids
+    assign_public_ip = true
+  }
+
+  dynamic "load_balancer" {
+    for_each = var.target_group_arn != null ? [1] : []
+    content {
+      target_group_arn = var.target_group_arn
+      container_name   = "${var.service_name}-container"
+      container_port   = var.container_port
+    }
+  }
+
+  dynamic "service_registries" {
+    for_each = length(aws_service_discovery_service.this) > 0 ? [1] : []
+    content {
+      registry_arn = aws_service_discovery_service.this[0].arn
+    }
+  }
+}

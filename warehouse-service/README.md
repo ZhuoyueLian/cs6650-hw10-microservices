@@ -28,6 +28,7 @@ The service uses a worker pool pattern:
 ## Environment Variables
 
 - `RABBITMQ_URL` - RabbitMQ connection URL (default: `amqp://admin:admin123@localhost:5672`)
+- `WAREHOUSE_WORKERS` - Number of worker goroutines for processing messages (default: `10`)
 
 ## Setup
 
@@ -90,7 +91,19 @@ The service uses thread-safe data structures to handle concurrent access:
 
 ## Configuration
 
-The number of worker goroutines can be adjusted by modifying the `numWorkers` constant in `main.go` (default: 10).
+The number of worker goroutines can be adjusted via the `WAREHOUSE_WORKERS` environment variable (default: 10). This is useful for load testing to balance production and consumption rates.
+
+**Example:**
+```bash
+# Set via environment variable
+export WAREHOUSE_WORKERS=20
+go run main.go
+
+# Or in Docker
+docker run -e WAREHOUSE_WORKERS=20 warehouse-service
+```
+
+For load testing, you can experiment with different values to find the optimal number of workers that keeps the RabbitMQ queue length under 1000 messages.
 
 ## Testing
 
